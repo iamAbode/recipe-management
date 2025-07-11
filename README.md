@@ -1,173 +1,65 @@
-# Recipe Management System - Architecture Documentation
+# Recipe Management System
 
-## System Overview
+A microservice-based recipe management application that allows users to manage their favorite recipes.
 
-The Recipe Management System is designed as a microservice-based application that allows users to manage their favorite recipes. Users can add, update, remove, and fetch recipes, as well as filter recipes based on various criteria such as vegetarian status, number of servings, specific ingredients, and text search within instructions.
+## Architecture
 
-## Architecture Design
+The application follows a microservice architecture with the following components:
 
-The system follows a microservice architecture pattern with the following components:
+- **API Gateway**: Entry point for all client requests, handles routing to appropriate services
+- **Config Server**: Centralized configuration management
+- **Discovery Service**: Service registry and discovery using Netflix Eureka
+- **Identity Service**: Handles authentication and authorization using OAuth2/JWT
+- **Recipe Service**: Core service for managing recipes
 
-### 1. API Gateway
-- Entry point for all client requests
-- Routes requests to appropriate services
-- Handles authentication validation
-- Provides API documentation via Swagger UI
+### Technology Stack
+- Java 17
+- Spring Boot 3.x
+- Spring Cloud
+- Spring Data JPA
+- MySQL
+- Hibernate
+- Maven
+- Docker
+- OpenAPI/Swagger for API documentation
+- JUnit and Mockito for testing
 
-### 2. Config Server
-- Centralized configuration management
-- Provides configuration to all services
-- Can use Git-based configuration repository
+## System Requirements
+- Java 17+
+- Maven 3.6+
+- MySQL 8.0+
+- Docker and Docker Compose (optional for containerization)
 
-### 3. Discovery Service
-- Service registry and discovery using Netflix Eureka
-- Allows services to find and communicate with each other
-- Enables dynamic scaling
+## How to Run
 
-### 4. Identity Service
-- Handles user authentication and authorization
-- Manages user registration and login
-- Issues JWT tokens for authenticated users
-- Validates tokens for protected endpoints
+### Using Maven
+1. Start MySQL server
+2. Configure database connection in each service's application.properties
+3. Run the services in the following order:
+   ```
+   cd config-server && mvn spring-boot:run
+   cd discovery-service && mvn spring-boot:run
+   cd identity-service && mvn spring-boot:run
+   cd recipe-service && mvn spring-boot:run
+   cd api-gateway && mvn spring-boot:run
+   ```
 
-### 5. Recipe Service
-- Core service for managing recipes
-- Provides CRUD operations for recipes
-- Implements recipe filtering functionality
-- Manages recipe ownership and permissions
+### Using Docker
+```
+docker-compose up
+```
 
-### 6. Observability Stack
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Metrics visualization and dashboards
-- **Micrometer**: Metrics instrumentation
-- **Spring Boot Actuator**: Exposes metrics endpoints
-- **Distributed Tracing**: Using Brave and Zipkin
+## API Documentation
+Once the application is running, access the Swagger UI:
+- API Gateway: http://localhost:8080/swagger-ui.html
+- Recipe Service: http://localhost:8081/swagger-ui.html
+- Identity Service: http://localhost:8082/swagger-ui.html
 
-## Technology Stack
-
-- **Java 17**: Core programming language
-- **Spring Boot 3.x**: Application framework
-- **Spring Cloud**: Microservice ecosystem
-- **Spring Data JPA**: Data access layer
-- **MySQL**: Primary database
-- **Hibernate**: ORM for database interaction
-- **Maven**: Build and dependency management
-- **Docker**: Containerization
-- **JWT**: Authentication mechanism
-- **Swagger/OpenAPI**: API documentation
-- **Prometheus**: Metrics collection
-- **Grafana**: Metrics visualization
-- **JUnit/Mockito**: Testing framework
-
-## API Endpoints
-
-### Identity Service
-
-- `POST /auth/signup`: Register a new user
-- `POST /auth/login`: Authenticate user and get token
-
-### Recipe Service
-
-- `GET /recipes`: Get all recipes
-- `GET /recipes/{id}`: Get recipe by ID
-- `POST /recipes`: Create a new recipe
-- `PUT /recipes/{id}`: Update an existing recipe
-- `DELETE /recipes/{id}`: Delete a recipe
-- `POST /recipes/filter`: Filter recipes based on criteria
-- `GET /recipes/my-recipes`: Get recipes created by the authenticated user
-
-## Data Model
-
-### User
-- id: Long
-- username: String
-- email: String
-- password: String
-- roles: Set<String>
-
-### Recipe
-- id: Long
-- name: String
-- description: String
-- vegetarian: boolean
-- servings: int
-- instructions: String
-- preparationTime: Integer
-- cookingTime: Integer
-- ingredients: List<Ingredient>
-- createdBy: String
-
-### Ingredient
-- id: Long
-- name: String
-- amount: String
-- unit: String
-- recipe: Recipe
-
-## Security
-
-The system implements a JWT-based authentication mechanism:
-
-1. Users authenticate via the Identity Service
-2. Upon successful authentication, a JWT token is issued
-3. The token contains user identity and roles
-4. The token is sent in the Authorization header for subsequent requests
-5. The API Gateway and Recipe Service validate the token
-6. Authorization is enforced based on user roles and resource ownership
-
-## Filtering Capabilities
-
-The Recipe Service provides robust filtering capabilities:
-
-1. Filter by vegetarian status
-2. Filter by number of servings
-3. Filter by included ingredients
-4. Filter by excluded ingredients
-5. Filter by text in instructions
-6. Combine multiple filters
-
-## Observability and Monitoring
-
-The system includes comprehensive observability features:
-
-### Metrics Collection
-- Each service exposes metrics via Spring Boot Actuator
-- Prometheus scrapes metrics from each service
-- Custom metrics track business operations (recipe creation, updates, etc.)
-- Method execution times are measured using AOP
-- JVM metrics (memory, CPU, garbage collection) are collected
-
-### Dashboards
-- Grafana dashboards visualize system metrics
-- Recipe Service Dashboard: Shows recipe operations, filter usage, HTTP requests
-- JVM Dashboard: Shows memory usage, CPU usage, garbage collection, thread counts
-
-### Health Checks
-- Spring Boot Actuator provides health endpoints
-- Services report health status to the discovery service
-- Prometheus monitors service availability
-
-### Tracing
-- Distributed tracing using Brave and Zipkin
-- Traces span across service boundaries
-- Performance bottlenecks can be identified
-
-## Testing Strategy
-
-The system includes multiple levels of testing:
-
-1. **Unit Tests**: Test individual components in isolation
-2. **Integration Tests**: Test interactions between components
-3. **Repository Tests**: Test data access layer
-4. **Controller Tests**: Test API endpoints
-5. **Security Tests**: Test authentication and authorization
-
-## Deployment
-
-The system is deployed using Docker containers:
-
-1. Each service is packaged as a Docker image
-2. Docker Compose is used for local deployment
-3. Environment variables are used for configuration
-4. Services communicate via the discovery service
-5. Prometheus and Grafana containers collect and visualize metrics
+## Features
+- User authentication and authorization
+- CRUD operations for recipes
+- Advanced filtering for recipes:
+  - By vegetarian status
+  - By number of servings
+  - By ingredients (include/exclude)
+  - Text search within instructions

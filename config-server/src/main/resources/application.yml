@@ -1,0 +1,25 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/username/recipe-config
+          default-label: main
+          clone-on-start: true
+        # Uncomment below for local configuration instead of Git
+        # native:
+        #   search-locations: classpath:/config
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

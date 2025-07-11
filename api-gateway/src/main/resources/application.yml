@@ -1,0 +1,73 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    config:
+      uri: http://config-server:8888
+      fail-fast: true
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: recipe-service
+          uri: lb://recipe-service
+          predicates:
+            - Path=/api/recipes/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: identity-service
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://identity-service:8082
+          jwk-set-uri: http://identity-service:8082/.well-known/jwks.json
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery-service:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+    enabled: true
+
+springdoc:
+  swagger-ui:
+    use-root-path: true
+    urls:
+      - name: recipe-service
+        url: /recipe-service/v3/api-docs
+      - name: identity-service
+        url: /identity-service/v3/api-docs

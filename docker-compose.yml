@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: recipedb
+      MYSQL_USER: recipeuser
+      MYSQL_PASSWORD: recipepass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - recipe-network
+
+  config-server:
+    build: ./config-server
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - recipe-network
+    depends_on:
+      - mysql
+
+  discovery-service:
+    build: ./discovery-service
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    networks:
+      - recipe-network
+    depends_on:
+      - config-server
+
+  identity-service:
+    build: ./identity-service
+    container_name: identity-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/recipedb
+      SPRING_DATASOURCE_USERNAME: recipeuser
+      SPRING_DATASOURCE_PASSWORD: recipepass
+    networks:
+      - recipe-network
+    depends_on:
+      - mysql
+      - discovery-service
+
+  recipe-service:
+    build: ./recipe-service
+    container_name: recipe-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/recipedb
+      SPRING_DATASOURCE_USERNAME: recipeuser
+      SPRING_DATASOURCE_PASSWORD: recipepass
+    networks:
+      - recipe-network
+    depends_on:
+      - mysql
+      - discovery-service
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - recipe-network
+    depends_on:
+      - discovery-service
+      - identity-service
+      - recipe-service
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - recipe-network
+    depends_on:
+      - recipe-service
+      - identity-service
+      - api-gateway
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - recipe-network
+    depends_on:
+      - prometheus
+
+networks:
+  recipe-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  prometheus-data:
+  grafana-data:
